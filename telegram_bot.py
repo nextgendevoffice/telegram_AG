@@ -299,7 +299,7 @@ async def deposit_credit(update: Update, context: CallbackContext):
             
         members = member_response.json().get('data', {}).get('docs', [])
         
-        # สร้าง inline keyboard จากรายชื่อ agents พร้อมชื่อ
+        # สร้าง inline keyboard จากราชื่อ agents พร้อมชื่อ
         keyboard = []
         for member in members:
             username = member['username']
@@ -454,15 +454,17 @@ deposit_conv = ConversationHandler(
     states={
         CHOOSE_AGENT: [
             CallbackQueryHandler(agent_chosen, pattern='^agent_'),
-            MessageHandler(filters.Regex('^/cancel$'), cancel)
+            CommandHandler('cancel', cancel)
         ],
         ENTER_AMOUNT: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, amount_entered),
-            MessageHandler(filters.Regex('^/cancel$'), cancel)
+            CommandHandler('cancel', cancel)
         ]
     },
     fallbacks=[CommandHandler('cancel', cancel)],
-    per_message=False  # เปลี่ยนเป็น False
+    per_chat=True,  # เพิ่มตัวเลือกนี้
+    per_user=True,  # เพิ่มตัวเลือกนี้
+    per_message=True
 )
 
 async def main():
@@ -478,9 +480,16 @@ async def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # เริ่มการทำงานของ bot
-    await application.initialize()  # เพิ่มการ initialize
-    await application.start()
+    await application.initialize()
+    
+    # ใช้ run_polling เพียงอย่างเดียว
     await application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # แก้ไขการเรียกใช้ main
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Bot stopped by user")
+    except Exception as e:
+        logger.error(f"Bot stopped due to error: {e}")
