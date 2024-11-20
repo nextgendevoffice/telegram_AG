@@ -448,6 +448,7 @@ async def main():
             ENTER_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, amount_entered)]
         },
         fallbacks=[],
+        per_message=True
     )
     
     application.add_handler(deposit_conv)
