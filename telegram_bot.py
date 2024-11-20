@@ -225,13 +225,27 @@ async def handle_message(update: Update, context: CallbackContext):
         await update.message.reply_text(message)
 
 async def start(update: Update, context: CallbackContext):
+    welcome_message = (
+        "ยินดีต้อนรับสู่ระบบจัดการเครดิต!\n\n"
+        "คำสั่งที่ใช้งานได้:\n"
+        "/start - เริ่มต้นใช้งาน\n"
+        "/credit - เช็คยอดเครดิต\n"
+        "/deposit - เติมเครดิต\n"
+        "/cancel - ยกเลิกการทำรายการ\n\n"
+        "หรือใช้ปุ่มด้านล่างเพื่อเข้าถึงฟังก์ชันต่างๆ"
+    )
     await update.message.reply_text(
-        "เลือกเมนูที่ต้องการ:",
+        welcome_message,
         reply_markup=get_keyboard()
     )
 
 # กำหนด states สำหรับ conversation
 CHOOSE_AGENT, ENTER_AMOUNT = range(2)
+
+async def cancel(update: Update, context: CallbackContext) -> int:
+    """ยกเลิกการทำรายการ"""
+    await update.message.reply_text('ยกเลิกการทำรายการแล้ว')
+    return ConversationHandler.END
 
 # Dictionary เก็บข้อมูลชั่วคราวระหว่างการทำรายการ
 user_deposit_data = {}
@@ -431,33 +445,42 @@ async def amount_entered(update: Update, context: CallbackContext):
         await update.message.reply_text("❌ เกิดข้อผิดพลาด")
         return ConversationHandler.END
 
+# แก้ไข ConversationHandler ใหม่
+deposit_conv = ConversationHandler(
+    entry_points=[
+        CommandHandler('deposit', deposit_credit),
+        MessageHandler(filters.Regex('^💸 เติมเครดิต$'), deposit_credit)
+    ],
+    states={
+        CHOOSE_AGENT: [
+            CallbackQueryHandler(agent_chosen, pattern='^agent_'),
+            MessageHandler(filters.Regex('^/cancel$'), cancel)
+        ],
+        ENTER_AMOUNT: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, amount_entered),
+            MessageHandler(filters.Regex('^/cancel$'), cancel)
+        ]
+    },
+    fallbacks=[CommandHandler('cancel', cancel)],
+    per_message=False  # เปลี่ยนเป็น False
+)
+
 async def main():
     logger.info("Bot starting...")
     
     # สร้าง application ด้วย builder pattern
     application = Application.builder().token(BOT_TOKEN).build()
     
-    # เพิ่ม conversation handler สำหรับการเติมเครดิต
-    deposit_conv = ConversationHandler(
-        entry_points=[
-            CommandHandler('deposit', deposit_credit),
-            MessageHandler(filters.Regex('^💸 เติมเครดิต$'), deposit_credit)
-        ],
-        states={
-            CHOOSE_AGENT: [CallbackQueryHandler(agent_chosen)],
-            ENTER_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, amount_entered)]
-        },
-        fallbacks=[],
-        per_message=True
-    )
-    
+    # เพิ่ม handlers
     application.add_handler(deposit_conv)
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("credit", check_credit_balance))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # เริ่มการทำงานของ bot
-    await application.run_polling()
+    await application.initialize()  # เพิ่มการ initialize
+    await application.start()
+    await application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
     asyncio.run(main())
