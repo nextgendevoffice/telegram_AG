@@ -15,7 +15,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('telegram_bot.log'),
         logging.StreamHandler()
     ]
 )
@@ -462,8 +461,7 @@ deposit_conv = ConversationHandler(
         ]
     },
     fallbacks=[CommandHandler('cancel', cancel)],
-    name="deposit_conversation",
-    persistent=False,
+    per_message=True,
     allow_reentry=True
 )
 
@@ -479,21 +477,19 @@ async def main():
     application.add_handler(CommandHandler("credit", check_credit_balance))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # เริ่มการทำงานของ bot
-    await application.initialize()
-    await application.start()
-    
     try:
-        await application.run_polling(allowed_updates=Update.ALL_TYPES)
-    finally:
-        await application.stop()
+        # รัน bot
+        await application.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            stop_signals=None
+        )
+    except Exception as e:
+        logger.error(f"Error running bot: {e}")
+        raise e
 
-# แก้ไขส่วนการรัน
 if __name__ == "__main__":
     try:
-        # ใช้ asyncio.get_event_loop() แทน asyncio.run()
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(main())
+        asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Bot stopped by user")
     except Exception as e:
