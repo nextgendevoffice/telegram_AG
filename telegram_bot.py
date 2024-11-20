@@ -462,15 +462,15 @@ deposit_conv = ConversationHandler(
         ]
     },
     fallbacks=[CommandHandler('cancel', cancel)],
-    per_chat=True,  # เพิ่มตัวเลือกนี้
-    per_user=True,  # เพิ่มตัวเลือกนี้
-    per_message=True
+    name="deposit_conversation",
+    persistent=False,
+    allow_reentry=True
 )
 
 async def main():
     logger.info("Bot starting...")
     
-    # สร้าง application ด้วย builder pattern
+    # สร้าง application
     application = Application.builder().token(BOT_TOKEN).build()
     
     # เพิ่ม handlers
@@ -481,14 +481,19 @@ async def main():
     
     # เริ่มการทำงานของ bot
     await application.initialize()
+    await application.start()
     
-    # ใช้ run_polling เพียงอย่างเดียว
-    await application.run_polling(allowed_updates=Update.ALL_TYPES)
-
-if __name__ == "__main__":
-    # แก้ไขการเรียกใช้ main
     try:
-        asyncio.run(main())
+        await application.run_polling(allowed_updates=Update.ALL_TYPES)
+    finally:
+        await application.stop()
+
+# แก้ไขส่วนการรัน
+if __name__ == "__main__":
+    try:
+        # ใช้ asyncio.get_event_loop() แทน asyncio.run()
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(main())
     except KeyboardInterrupt:
         logger.info("Bot stopped by user")
     except Exception as e:
