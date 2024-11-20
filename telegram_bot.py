@@ -22,8 +22,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Telegram Bot configuration
-BOT_TOKEN = "7427156872:AAFwKfSmGQyQSzYtovuaATPJhuDiVJX8PHc"
-CHAT_ID = "-4572778669"
+BOT_TOKEN = "8048774149:AAGFiSkvEjmaL5wbtAa5aP4mfal9SeN3goE"
+CHAT_ID = "-4535139130"
 API_URL = "https://walrus-app-5ugwj.ondigitalocean.app"
 MEMBER_LIST_URL = "https://ag.ambkingapi.com/a/p/memberList"
 DEPOSIT_URL = "https://ag.ambkingapi.com/a/p/deposit"
